@@ -15,7 +15,9 @@ async function startBot() {
     await useMultiFileAuthState('auth')
 
   const sock = makeWASocket({
-    auth: state
+    auth: state,
+
+    browser: ['Ubuntu', 'Chrome', '20.0.04']
   })
 
   sock.ev.on('creds.update', saveCreds)
@@ -24,22 +26,33 @@ async function startBot() {
     async ({ connection }) => {
 
       if (connection === 'open') {
+
         console.log('Bot conectado 🚀')
+
       }
 
     })
 
-  // COLOQUE SEU NÚMERO AQUI
+  // SEU NÚMERO
   const phoneNumber = '5515991855617'
 
   setTimeout(async () => {
 
-    const code =
-      await sock.requestPairingCode(phoneNumber)
+    try {
 
-    console.log('\nCÓDIGO:\n')
+      const code =
+        await sock.requestPairingCode(phoneNumber)
 
-    console.log(code)
+      console.log('\n====================')
+      console.log('CÓDIGO:')
+      console.log(code)
+      console.log('====================\n')
+
+    } catch (error) {
+
+      console.log(error)
+
+    }
 
   }, 5000)
 
@@ -50,6 +63,7 @@ async function startBot() {
 
       if (!msg.message) return
 
+      // evita loop infinito
       if (msg.key.fromMe) return
 
       const text =
@@ -60,6 +74,8 @@ async function startBot() {
       const sender =
         msg.key.remoteJid
 
+      console.log('Mensagem:', text)
+
       try {
 
         const response =
@@ -69,7 +85,7 @@ async function startBot() {
               {
                 role: 'system',
                 content:
-                  'Você é um atendente simpático.'
+                  'Você é um atendente simpático e inteligente.'
               },
               {
                 role: 'user',
