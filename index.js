@@ -3,7 +3,6 @@ const {
   useMultiFileAuthState
 } = require('@whiskeysockets/baileys')
 
-const qrcode = require('qrcode-terminal')
 const OpenAI = require('openai')
 
 const openai = new OpenAI({
@@ -21,76 +20,78 @@ async function startBot() {
 
   sock.ev.on('creds.update', saveCreds)
 
-  sock.ev.on('connection.update', ({ qr, connection }) => {
+  sock.ev.on('connection.update',
+    async ({ connection }) => {
 
-    if (qr) {
+      if (connection === 'open') {
+        console.log('Bot conectado 🚀')
+      }
 
-      console.log('ESCANEIE O QR:')
+    })
 
-      qrcode.generate(qr, {
-        small: true
-      })
+  // COLOQUE SEU NÚMERO AQUI
+  const phoneNumber = '5515991855617'
 
-    }
+  setTimeout(async () => {
 
-    if (connection === 'open') {
+    const code =
+      await sock.requestPairingCode(phoneNumber)
 
-      console.log('Bot conectado 🚀')
+    console.log('\nCÓDIGO:\n')
 
-    }
+    console.log(code)
 
-  })
+  }, 5000)
 
-  sock.ev.on('messages.upsert', async ({ messages }) => {
+  sock.ev.on('messages.upsert',
+    async ({ messages }) => {
 
-    const msg = messages[0]
+      const msg = messages[0]
 
-    if (!msg.message) return
+      if (!msg.message) return
 
-    // evita loop infinito
-    if (msg.key.fromMe) return
+      if (msg.key.fromMe) return
 
-    const text =
-      msg.message.conversation || ''
+      const text =
+        msg.message.conversation || ''
 
-    if (!text) return
+      if (!text) return
 
-    const sender =
-      msg.key.remoteJid
+      const sender =
+        msg.key.remoteJid
 
-    console.log('Mensagem:', text)
+      try {
 
-    try {
+        const response =
+          await openai.chat.completions.create({
+            model: 'gpt-3.5-turbo',
+            messages: [
+              {
+                role: 'system',
+                content:
+                  'Você é um atendente simpático.'
+              },
+              {
+                role: 'user',
+                content: text
+              }
+            ]
+          })
 
-      const response =
-        await openai.chat.completions.create({
-          model: 'gpt-3.5-turbo',
-          messages: [
-            {
-              role: 'system',
-              content: 'Você é um atendente simpático e inteligente.'
-            },
-            {
-              role: 'user',
-              content: text
-            }
-          ]
+        const reply =
+          response.choices[0].message.content
+
+        await sock.sendMessage(sender, {
+          text: reply
         })
 
-      const reply =
-        response.choices[0].message.content
+      } catch (error) {
 
-      await sock.sendMessage(sender, {
-        text: reply
-      })
+        console.log(error)
 
-    } catch (error) {
+      }
 
-      console.log(error)
-
-    }
-
-  })
+    })
 
 }
 
