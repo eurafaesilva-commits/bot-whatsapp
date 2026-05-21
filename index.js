@@ -12,11 +12,10 @@ const openai = new OpenAI({
 async function startBot() {
 
   const { state, saveCreds } =
-    await useMultiFileAuthState('auth')
+    await useMultiFileAuthState('./auth')
 
   const sock = makeWASocket({
     auth: state,
-
     browser: ['Ubuntu', 'Chrome', '20.0.04']
   })
 
@@ -36,25 +35,30 @@ async function startBot() {
   // SEU NÚMERO
   const phoneNumber = '5515991855617'
 
-  setTimeout(async () => {
+  // gera código apenas 1 vez
+  if (!sock.authState?.creds?.registered) {
 
-    try {
+    setTimeout(async () => {
 
-      const code =
-        await sock.requestPairingCode(phoneNumber)
+      try {
 
-      console.log('\n====================')
-      console.log('CÓDIGO:')
-      console.log(code)
-      console.log('====================\n')
+        const code =
+          await sock.requestPairingCode(phoneNumber)
 
-    } catch (error) {
+        console.log('\n====================')
+        console.log('CÓDIGO:')
+        console.log(code)
+        console.log('====================\n')
 
-      console.log(error)
+      } catch (err) {
 
-    }
+        console.log(err)
 
-  }, 5000)
+      }
+
+    }, 5000)
+
+  }
 
   sock.ev.on('messages.upsert',
     async ({ messages }) => {
@@ -62,8 +66,6 @@ async function startBot() {
       const msg = messages[0]
 
       if (!msg.message) return
-
-      // evita loop infinito
       if (msg.key.fromMe) return
 
       const text =
@@ -85,7 +87,7 @@ async function startBot() {
               {
                 role: 'system',
                 content:
-                  'Você é um atendente simpático e inteligente.'
+                  'Você é um atendente simpático.'
               },
               {
                 role: 'user',
@@ -101,9 +103,9 @@ async function startBot() {
           text: reply
         })
 
-      } catch (error) {
+      } catch (err) {
 
-        console.log(error)
+        console.log(err)
 
       }
 
